@@ -16,11 +16,13 @@
 #'   (see "Specifying the repository" in \url{https://bookdown.org/yihui/bookdown/html.html#bootstrap4-style}).
 #' @param lib_dir,pandoc_args,extra_dependencies,split_bib,... Passed on to
 #'   [rmarkdown::html_document()].
-#'
+#' @param fn_gitbook A boolean to switch to gitbook-variant of dealing with footnotes
+#' 
 #' @export
 #' @md
 bs4_book <- function(theme = bs4_book_theme(),
                      repo = NULL,
+                     fn_gitbook = FALSE,
                      ...,
                      lib_dir = "libs",
                      pandoc_args = NULL,
@@ -299,7 +301,10 @@ tweak_part_screwup <- function(html) {
   xml2::xml_remove(sidebar)
 }
 
-tweak_footnotes <- function(html) {
+tweak_footnotes <- function(html, fn_gitbook) {
+ 
+ 
+ if (fn_gitbook == FALSE) {
   container <- xml2::xml_find_all(html, ".//div[@class='footnotes']")
   if (length(container) != 1) {
     return()
@@ -325,6 +330,7 @@ tweak_footnotes <- function(html) {
 
   # Delete container
   xml2::xml_remove(container)
+ }
 }
 
 tweak_chunks <- function(html) {
