@@ -261,7 +261,7 @@ bs4_chapter_tweak <- function(path, toc, rmd_index = NULL, repo = NULL, fn_gitbo
   tweak_chapter(html)
   tweak_anchors(html)
   tweak_chunks(html)
-  tweak_footnotes(html, fn_gitbook = fn_gitbook)
+  tweak_footnotes(html, fn_gitbook)
   tweak_part_screwup(html)
   tweak_navbar(html, toc, basename(path), rmd_index = rmd_index, repo = repo)
   tweak_metadata(html, path)
