@@ -360,87 +360,87 @@ tweak_footnotes <- function(html, fn_gitbook) {
   # Delete container
   xml2::xml_remove(container)
  } else {
-  
-  # parse and remove footnotes (will reassign them to relevant pages later)
-  res = parse_footnotes(html_body)
-  fnts = res$items
-  if (length(fnts)) html_body[res$range] = ''
+   return()
+#   # parse and remove footnotes (will reassign them to relevant pages later)
+#   res = parse_footnotes(html_body)
+#   fnts = res$items
+#   if (length(fnts)) html_body[res$range] = ''
 
-  if (use_rmd_names) {
-    html_body[idx] = ''
-    nms_chaps = nms  # Rmd filenames
-    if (n >= 1) {
-      idx = next_nearest(idx, grep('^<div', html_body))
-      idx = c(1, idx[-n])
-    }
-  } else {
-    h1 = grep('^<div (id="[^"]+" )?class="section level1("| )', html_body)
-    h2 = grep('^<div (id="[^"]+" )?class="section level2("| )', html_body)
-    idx2 = if (split_level == 1) h1 else if (split_level == 2) sort(c(h1, h2))
-    n = length(idx2)
-    nms_chaps = if (length(idx)) {
-      vapply(idx2, character(1), FUN = function(i) head(nms[idx > i], 1))
-    }
-    reg_id = '^<div id="([^"]+)".*$'
-    reg_num = '^(<h[12]><span class="header-section-number">)([.A-Z0-9]+)(</span>.+</h[12]>).*$'
-    nms = vapply(idx2, character(1), FUN = function(i) {
-      x1 = html_body[i]; x2 = html_body[i + 1]
-      id = if (grepl(reg_id, x1)) gsub(reg_id, '\\1', x1)
-      num = if (grepl(reg_num, x2)) gsub(reg_num, '\\2', x2)
-      if (is.null(id) && is.null(num)) stop(
-        'The heading ', x2, ' must have at least an id or a number'
-      )
-      nm = if (grepl('[+]number$', split_by)) {
-        paste(c(num, id), collapse = '-')
-      } else id
-      if (is.null(nm)) stop('The heading ', x2, ' must have an id')
-      nm
-    })
-    if (anyDuplicated(nms)) (if (isTRUE(opts$get('preview'))) warning else stop)(
-      'Automatically generated filenames contain duplicated ones: ',
-      paste(nms[duplicated(nms)], collapse = ', ')
-    )
-    # generate index.html if the first Rmd filename is index.Rmd
-    if (identical(with_ext(head(nms_chaps, 1), ''), 'index')) nms[1] = 'index'
-    html_body[idx] = ''
-    idx = idx2
-  }
-  if (n == 0) {
-    idx = 1; nms = output; n = 1
-  }
+#   if (use_rmd_names) {
+#     html_body[idx] = ''
+#     nms_chaps = nms  # Rmd filenames
+#     if (n >= 1) {
+#       idx = next_nearest(idx, grep('^<div', html_body))
+#       idx = c(1, idx[-n])
+#     }
+#   } else {
+#     h1 = grep('^<div (id="[^"]+" )?class="section level1("| )', html_body)
+#     h2 = grep('^<div (id="[^"]+" )?class="section level2("| )', html_body)
+#     idx2 = if (split_level == 1) h1 else if (split_level == 2) sort(c(h1, h2))
+#     n = length(idx2)
+#     nms_chaps = if (length(idx)) {
+#       vapply(idx2, character(1), FUN = function(i) head(nms[idx > i], 1))
+#     }
+#     reg_id = '^<div id="([^"]+)".*$'
+#     reg_num = '^(<h[12]><span class="header-section-number">)([.A-Z0-9]+)(</span>.+</h[12]>).*$'
+#     nms = vapply(idx2, character(1), FUN = function(i) {
+#       x1 = html_body[i]; x2 = html_body[i + 1]
+#       id = if (grepl(reg_id, x1)) gsub(reg_id, '\\1', x1)
+#       num = if (grepl(reg_num, x2)) gsub(reg_num, '\\2', x2)
+#       if (is.null(id) && is.null(num)) stop(
+#         'The heading ', x2, ' must have at least an id or a number'
+#       )
+#       nm = if (grepl('[+]number$', split_by)) {
+#         paste(c(num, id), collapse = '-')
+#       } else id
+#       if (is.null(nm)) stop('The heading ', x2, ' must have an id')
+#       nm
+#     })
+#     if (anyDuplicated(nms)) (if (isTRUE(opts$get('preview'))) warning else stop)(
+#       'Automatically generated filenames contain duplicated ones: ',
+#       paste(nms[duplicated(nms)], collapse = ', ')
+#     )
+#     # generate index.html if the first Rmd filename is index.Rmd
+#     if (identical(with_ext(head(nms_chaps, 1), ''), 'index')) nms[1] = 'index'
+#     html_body[idx] = ''
+#     idx = idx2
+#   }
+#   if (n == 0) {
+#     idx = 1; nms = output; n = 1
+#   }
 
-  nms = basename(with_ext(nms, '.html'))  # the HTML filenames to be generated
-  input = opts$get('input_rmd')
-  html_body = add_chapter_prefix(html_body)
-  html_toc = restore_links(html_toc, html_body, idx, nms)
-  for (i in seq_len(n)) {
-    # skip writing the chapter.html if the current Rmd name is not in the vector
-    # of Rmd names passed to render_book() (only this vector of Rmd's should be
-    # rendered for preview purposes)
-    if (isTRUE(opts$get('preview')) && !(nms_chaps[i] %in% input)) {
-      if (!file.exists(output_path(nms[i]))) file.create(nms[i])
-      next
-    }
-    i1 = idx[i]
-    i2 = if (i == n) length(html_body) else idx[i + 1] - 1
-    html = c(if (i == 1) html_title, html_body[i1:i2])
-    a_targets = parse_a_targets(html)
-    if (split_bib) {
-      # in order to find references in footnotes, we add footnotes to chapter body
-      a_targets = parse_a_targets(relocate_footnotes(html, fnts, a_targets))
-      html = relocate_references(html, refs, ref_title, a_targets, refs_div)
-    }
-    html = relocate_footnotes(html, fnts, a_targets)
-    html = restore_links(html, html_body, idx, nms)
-    html = build(
-      prepend_chapter_title(html_head, html), html_toc, html,
-      if (i > 1) nms[i - 1],
-      if (i < n) nms[i + 1],
-      if (length(nms_chaps)) nms_chaps[i],
-      nms[i], html_foot, ...
-    )
-    write_utf8(html, nms[i])
-  }
+#   nms = basename(with_ext(nms, '.html'))  # the HTML filenames to be generated
+#   input = opts$get('input_rmd')
+#   html_body = add_chapter_prefix(html_body)
+#   html_toc = restore_links(html_toc, html_body, idx, nms)
+#   for (i in seq_len(n)) {
+#     # skip writing the chapter.html if the current Rmd name is not in the vector
+#     # of Rmd names passed to render_book() (only this vector of Rmd's should be
+#     # rendered for preview purposes)
+#     if (isTRUE(opts$get('preview')) && !(nms_chaps[i] %in% input)) {
+#       if (!file.exists(output_path(nms[i]))) file.create(nms[i])
+#       next
+#     }
+#     i1 = idx[i]
+#     i2 = if (i == n) length(html_body) else idx[i + 1] - 1
+#     html = c(if (i == 1) html_title, html_body[i1:i2])
+#     a_targets = parse_a_targets(html)
+#     if (split_bib) {
+#       # in order to find references in footnotes, we add footnotes to chapter body
+#       a_targets = parse_a_targets(relocate_footnotes(html, fnts, a_targets))
+#       html = relocate_references(html, refs, ref_title, a_targets, refs_div)
+#     }
+#     html = relocate_footnotes(html, fnts, a_targets)
+#     html = restore_links(html, html_body, idx, nms)
+#     html = build(
+#       prepend_chapter_title(html_head, html), html_toc, html,
+#       if (i > 1) nms[i - 1],
+#       if (i < n) nms[i + 1],
+#       if (length(nms_chaps)) nms_chaps[i],
+#       nms[i], html_foot, ...
+#     )
+#     write_utf8(html, nms[i])
+#   }
              
   }
 
