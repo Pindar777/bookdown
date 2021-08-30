@@ -8,7 +8,7 @@
 <!-- badges: end -->
 
 
-### HINT: This fork allows to alter the way **footnotes** are presented.
+### HINT: This fork allows to alter the way **footnotes** are presented -> new boolean `fn_gitbook` (default is false)
 
 ***
 
