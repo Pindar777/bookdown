@@ -22,7 +22,7 @@
 #' @md
 bs4_book <- function(theme = bs4_book_theme(),
                      repo = NULL,
-                     fn_gitbook = TRUE,
+                     fn_gitbook = FALSE,
                      ...,
                      lib_dir = "libs",
                      pandoc_args = NULL,
@@ -56,7 +56,7 @@ bs4_book <- function(theme = bs4_book_theme(),
     }
 
     output2 <- bs4_book_build(output, repo = repo, lib_dir = lib_dir,
-                              split_bib = split_bib)
+                              split_bib = split_bib, fn_gitbook = fn_gitbook)
 
     if (clean && file.exists(output) && !same_path(output, output2)) {
       file.remove(output)
@@ -84,6 +84,7 @@ bs4_book_theme <- function(primary = "#0068D9", version = 4, ...) {
 
 bs4_book_build <- function(output = "bookdown.html",
                            repo = NULL,
+                           fn_gitbook = fn_gitbook,
                            lib_dir = "libs",
                            output_dir = opts$get("output_dir"),
                            split_bib = split_bib) {
@@ -248,7 +249,7 @@ bs4_chapters_tweak <- function(output,
   )
 }
 
-bs4_chapter_tweak <- function(path, toc, rmd_index = NULL, repo = NULL, fn_gitbook = TRUE) {
+bs4_chapter_tweak <- function(path, toc, rmd_index = NULL, repo = NULL, fn_gitbook = FALSE) {
   text <- xfun::file_string(path)
 
   # Convert ANSI escape to \u2029 since control characters are ignored in XML2
@@ -260,7 +261,7 @@ bs4_chapter_tweak <- function(path, toc, rmd_index = NULL, repo = NULL, fn_gitbo
   tweak_chapter(html)
   tweak_anchors(html)
   tweak_chunks(html)
-  tweak_footnotes(html, fn_gitbook)
+  tweak_footnotes(html, fn_gitbook = fn_gitbook)
   tweak_part_screwup(html)
   tweak_navbar(html, toc, basename(path), rmd_index = rmd_index, repo = repo)
   tweak_metadata(html, path)
@@ -329,7 +330,7 @@ relocate_footnotes <- function(x, notes, ids) {
 }
 
 
-tweak_footnotes <- function(html, fn_gitbook = TRUE) {
+tweak_footnotes <- function(html, fn_gitbook = FALSE) {
  
  
  if (fn_gitbook == FALSE) {
