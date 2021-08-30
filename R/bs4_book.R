@@ -109,12 +109,14 @@ bs4_book_build <- function(output = "bookdown.html",
     bs4_chapter_tweak(
       output2,
       repo = repo,
+      fn_gitbook = fn_gitbook,
       rmd_index = setNames(opts$get("input_rmd"), output2),
       toc = build_toc(output2)
     )
   } else {
     bs4_chapters_tweak(output,
       repo = repo,
+      fn_gitbook = fn_gitbook,
       rmd_index = unlist(as.list(rmd_index)),
       output_dir = output_dir
     )
@@ -222,6 +224,7 @@ bs4_book_dependency <- function(theme) {
 bs4_chapters_tweak <- function(output,
                                rmd_index = NULL,
                                repo = NULL,
+                               fn_gitbook = FALSE,
                                output_dir = opts$get("output_dir")) {
   toc <- build_toc(output)
   files <- toc[!duplicated(toc$file_name) & !is.na(toc$file_name), ]
@@ -231,13 +234,13 @@ bs4_chapters_tweak <- function(output,
   for (i in seq_len(nrow(files))) {
     path <- files$path[[i]]
     message("Tweaking ", path)
-    index[[i]] <- bs4_chapter_tweak(path, toc, rmd_index = rmd_index, repo = repo)
+    index[[i]] <- bs4_chapter_tweak(path, toc, rmd_index = rmd_index, repo = repo, fn_gitbook = fn_gitbook)
   }
   # tweak 404.html ---
   path_404 <- file.path(output_dir, "404.html")
   if (file.exists(path_404)) {
     message("Tweaking ", path_404)
-    bs4_chapter_tweak(path_404, toc, rmd_index = rmd_index, repo = repo)
+    bs4_chapter_tweak(path_404, toc, rmd_index = rmd_index, repo = repo, fn_gitbook = fn_gitbook)
 
   }
   index <- unlist(index, recursive = FALSE, use.names = FALSE)
