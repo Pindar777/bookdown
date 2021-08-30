@@ -301,10 +301,39 @@ tweak_part_screwup <- function(html) {
   xml2::xml_remove(sidebar)
 }
 
+
+# parse footnotes in the div of class "footnotes"; each footnote is one <li>
+# with id fnX and a link back to the text
+parse_footnotes <- function(x) {
+  i = which(x == '<div class="footnotes">')
+  if (length(i) == 0) return(list(items = character(), range = integer()))
+  j = which(x == '</div>')
+  j = min(j[j > i])
+  n = length(x)
+  r = '<li id="fn([0-9]+)"><p>(?s).+?<a href="#fnref\\1"[^>]*?>\\X</a></p></li>'
+  s = paste(x[i:n], collapse = '\n')
+  items = unlist(regmatches(s, gregexpr(r, s, perl = TRUE)))
+  list(items = setNames(items, gsub(r, 'fn\\1', items, perl = TRUE)), range = i:j)
+}
+
+# move footnotes to the relevant page
+relocate_footnotes <- function(x, notes, ids) {
+  if (length(notes) == 0) return(x)
+  ids = intersect(ids, names(notes))
+  if (length(ids) == 0) return(x)
+  c(
+    x, '<div class="footnotes">', '<hr />',
+    sprintf('<ol start="%s">', gsub('^fn', '', ids[1])), notes[ids],
+    '</ol>', '</div>'
+  )
+}
+
+
 tweak_footnotes <- function(html, fn_gitbook) {
  
  
  if (fn_gitbook == FALSE) {
+   
   container <- xml2::xml_find_all(html, ".//div[@class='footnotes']")
   if (length(container) != 1) {
     return()
@@ -331,7 +360,91 @@ tweak_footnotes <- function(html, fn_gitbook) {
   # Delete container
   xml2::xml_remove(container)
  }
-}
+} else {
+  
+  # parse and remove footnotes (will reassign them to relevant pages later)
+  res = parse_footnotes(html_body)
+  fnts = res$items
+  if (length(fnts)) html_body[res$range] = ''
+
+  if (use_rmd_names) {
+    html_body[idx] = ''
+    nms_chaps = nms  # Rmd filenames
+    if (n >= 1) {
+      idx = next_nearest(idx, grep('^<div', html_body))
+      idx = c(1, idx[-n])
+    }
+  } else {
+    h1 = grep('^<div (id="[^"]+" )?class="section level1("| )', html_body)
+    h2 = grep('^<div (id="[^"]+" )?class="section level2("| )', html_body)
+    idx2 = if (split_level == 1) h1 else if (split_level == 2) sort(c(h1, h2))
+    n = length(idx2)
+    nms_chaps = if (length(idx)) {
+      vapply(idx2, character(1), FUN = function(i) head(nms[idx > i], 1))
+    }
+    reg_id = '^<div id="([^"]+)".*$'
+    reg_num = '^(<h[12]><span class="header-section-number">)([.A-Z0-9]+)(</span>.+</h[12]>).*$'
+    nms = vapply(idx2, character(1), FUN = function(i) {
+      x1 = html_body[i]; x2 = html_body[i + 1]
+      id = if (grepl(reg_id, x1)) gsub(reg_id, '\\1', x1)
+      num = if (grepl(reg_num, x2)) gsub(reg_num, '\\2', x2)
+      if (is.null(id) && is.null(num)) stop(
+        'The heading ', x2, ' must have at least an id or a number'
+      )
+      nm = if (grepl('[+]number$', split_by)) {
+        paste(c(num, id), collapse = '-')
+      } else id
+      if (is.null(nm)) stop('The heading ', x2, ' must have an id')
+      nm
+    })
+    if (anyDuplicated(nms)) (if (isTRUE(opts$get('preview'))) warning else stop)(
+      'Automatically generated filenames contain duplicated ones: ',
+      paste(nms[duplicated(nms)], collapse = ', ')
+    )
+    # generate index.html if the first Rmd filename is index.Rmd
+    if (identical(with_ext(head(nms_chaps, 1), ''), 'index')) nms[1] = 'index'
+    html_body[idx] = ''
+    idx = idx2
+  }
+  if (n == 0) {
+    idx = 1; nms = output; n = 1
+  }
+
+  nms = basename(with_ext(nms, '.html'))  # the HTML filenames to be generated
+  input = opts$get('input_rmd')
+  html_body = add_chapter_prefix(html_body)
+  html_toc = restore_links(html_toc, html_body, idx, nms)
+  for (i in seq_len(n)) {
+    # skip writing the chapter.html if the current Rmd name is not in the vector
+    # of Rmd names passed to render_book() (only this vector of Rmd's should be
+    # rendered for preview purposes)
+    if (isTRUE(opts$get('preview')) && !(nms_chaps[i] %in% input)) {
+      if (!file.exists(output_path(nms[i]))) file.create(nms[i])
+      next
+    }
+    i1 = idx[i]
+    i2 = if (i == n) length(html_body) else idx[i + 1] - 1
+    html = c(if (i == 1) html_title, html_body[i1:i2])
+    a_targets = parse_a_targets(html)
+    if (split_bib) {
+      # in order to find references in footnotes, we add footnotes to chapter body
+      a_targets = parse_a_targets(relocate_footnotes(html, fnts, a_targets))
+      html = relocate_references(html, refs, ref_title, a_targets, refs_div)
+    }
+    html = relocate_footnotes(html, fnts, a_targets)
+    html = restore_links(html, html_body, idx, nms)
+    html = build(
+      prepend_chapter_title(html_head, html), html_toc, html,
+      if (i > 1) nms[i - 1],
+      if (i < n) nms[i + 1],
+      if (length(nms_chaps)) nms_chaps[i],
+      nms[i], html_foot, ...
+    )
+    write_utf8(html, nms[i])
+  }
+             
+  }
+
 
 tweak_chunks <- function(html) {
   # Want to surround inline images in special div, instead of a p, so that
