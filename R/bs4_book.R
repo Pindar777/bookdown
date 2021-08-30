@@ -359,8 +359,7 @@ tweak_footnotes <- function(html, fn_gitbook) {
 
   # Delete container
   xml2::xml_remove(container)
- }
-} else {
+ } else {
   
   # parse and remove footnotes (will reassign them to relevant pages later)
   res = parse_footnotes(html_body)
