@@ -8,6 +8,10 @@
 <!-- badges: end -->
 
 
+### HINT: This fork allows to alter the way **footnotes** are presented.
+
+***
+
 A open-source (GPL-3) R package to facilitate writing books and long-form articles/reports with R Markdown. Features include:
 
 - Generate printer-ready books and ebooks from R Markdown documents
@@ -35,7 +39,7 @@ install.packages("bookdown")
 If you want to use the development version of the **bookdown** package, you can install the package from GitHub via the [**remotes** package](https://remotes.r-lib.org):
 
 ```r
-remotes::install_github('rstudio/bookdown')
+remotes::install_github('Pindar777/bookdown')
 ```
 
 ## Usage
