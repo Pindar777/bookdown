@@ -444,7 +444,8 @@ tweak_footnotes <- function(html, fn_gitbook) {
              
   }
 
-
+}
+             
 tweak_chunks <- function(html) {
   # Want to surround inline images in special div, instead of a p, so that
   # we can set overflow-x. But don't want for floating images, since they
