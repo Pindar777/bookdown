@@ -581,7 +581,13 @@ tweak_navbar <- function(html, toc, active = "", rmd_index = NULL, repo = NULL, 
   nav <- toc[toc$level %in% 0:1, ]
   nav <- nav[!duplicated(nav$file_name) | is.na(nav$file_name), ]
 
-  is_active <- nav$file_name == active
+    # edit: collapsed TOC
+    if (!isTRUE(TOC_collapsed)) {
+      is_active <- TRUE
+    } else {
+      is_active <- nav$file_name == active
+    }
+  
   class <- ifelse(is_active, "active", "")
   a <- paste0(
     "<li><a class='", class, "' href='", nav$file_name, "'>",
@@ -598,13 +604,12 @@ tweak_navbar <- function(html, toc, active = "", rmd_index = NULL, repo = NULL, 
     "</ul>\n"
   )
 
-  # edit: collapsed TOC
-#   if (isTRUE(TOC_collapsed)) {
+
     
     dropdown <- xml2::xml_find_first(html, ".//div[@id='book-toc']")
     xml2::xml_replace(dropdown, xml2::read_xml(to_insert))
     
-#   }
+
       
   # Prev/next chapter -------------------------------------------------------
   # Need to ignore entries without files for cross-links
