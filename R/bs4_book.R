@@ -546,7 +546,15 @@ tweak_navbar <- function(html, toc, active = "", rmd_index = NULL, repo = NULL, 
   template_link(html, ".//a[@id='book-edit']", repo_edit)
 
   # Within chapter nav --------------------------------------------------
-  head <- toc[toc$file_name == active & toc$level > 0 & !is.na(toc$id), ]
+  
+      # edit: collapsed TOC
+   if (!isTRUE(TOC_collapsed)) {
+      head <- toc[toc$level > 0 & !is.na(toc$id), ]
+    } else {
+      head <- toc[toc$file_name == active & toc$level > 0 & !is.na(toc$id), ]
+    }
+  
+
   if (nrow(head) > 0) {
     link <- paste0(
       "<a class='nav-link' href='#", head$id, "'>",
@@ -581,13 +589,7 @@ tweak_navbar <- function(html, toc, active = "", rmd_index = NULL, repo = NULL, 
   nav <- toc[toc$level %in% 0:1, ]
   nav <- nav[!duplicated(nav$file_name) | is.na(nav$file_name), ]
 
-    # edit: collapsed TOC
-    if (!isTRUE(TOC_collapsed)) {
-      is_active <- TRUE
-    } else {
-      is_active <- nav$file_name == active
-    }
-  
+  is_active <- nav$file_name == active  
   class <- ifelse(is_active, "active", "")
   a <- paste0(
     "<li><a class='", class, "' href='", nav$file_name, "'>",
