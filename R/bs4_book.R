@@ -599,7 +599,7 @@ tweak_navbar <- function(html, toc, active = "", rmd_index = NULL, repo = NULL, 
   )
 
   # edit: collapsed TOC
-  if (isTrue(TOC_collapsed)) {
+  if (isTRUE(TOC_collapsed)) {
     dropdown <- xml2::xml_find_first(html, ".//div[@id='book-toc']")
     xml2::xml_replace(dropdown, xml2::read_xml(to_insert))
   }
