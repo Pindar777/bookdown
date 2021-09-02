@@ -546,6 +546,8 @@ tweak_navbar <- function(html, toc, active = "", rmd_index = NULL, repo = NULL, 
   template_link(html, ".//a[@id='book-edit']", repo_edit)
 
   # Within chapter nav --------------------------------------------------
+  
+  
   head <- toc[toc$file_name == active & toc$level > 0 & !is.na(toc$id), ]
   if (nrow(head) > 0) {
     link <- paste0(
@@ -573,8 +575,15 @@ tweak_navbar <- function(html, toc, active = "", rmd_index = NULL, repo = NULL, 
       "</ul>\n"
     )
 
+    
+    # edit: collapsed TOC
+    if (isTRUE(TOC_collapsed)) {
+    
     node <- xml2::xml_find_first(html, ".//div[@id='book-on-this-page']")
     xml2::xml_replace(node, xml2::read_xml(nav))
+    
+   }
+    
   }
 
   # TOC ---------------------------------------------------------------------
@@ -598,8 +607,6 @@ tweak_navbar <- function(html, toc, active = "", rmd_index = NULL, repo = NULL, 
     "</ul>\n"
   )
 
-  # edit: collapsed TOC
-  if (isTRUE(TOC_collapsed)) {
     dropdown <- xml2::xml_find_first(html, ".//div[@id='book-toc']")
     xml2::xml_replace(dropdown, xml2::read_xml(to_insert))
   }
@@ -643,7 +650,7 @@ tweak_navbar <- function(html, toc, active = "", rmd_index = NULL, repo = NULL, 
   )
   main <- xml2::xml_find_first(html, ".//main")
   xml2::xml_add_child(main, xml2::read_xml(chapter_nav))
-}
+
 
 nav_num <- function(x) {
   ifelse(is.na(x), "", paste0("<span class='header-section-number'>", x, "</span> "))
