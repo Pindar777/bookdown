@@ -547,6 +547,8 @@ tweak_navbar <- function(html, toc, active = "", rmd_index = NULL, repo = NULL, 
 
   # Within chapter nav --------------------------------------------------
   
+      # edit: collapsed TOC
+   if (isTRUE(TOC_collapsed)) {
   
   head <- toc[toc$file_name == active & toc$level > 0 & !is.na(toc$id), ]
   if (nrow(head) > 0) {
@@ -575,16 +577,13 @@ tweak_navbar <- function(html, toc, active = "", rmd_index = NULL, repo = NULL, 
       "</ul>\n"
     )
 
-    
-    # edit: collapsed TOC
-    if (isTRUE(TOC_collapsed)) {
-    
+        
     node <- xml2::xml_find_first(html, ".//div[@id='book-on-this-page']")
     xml2::xml_replace(node, xml2::read_xml(nav))
     
-   }
-    
-  }
+      }
+     
+    }
 
   # TOC ---------------------------------------------------------------------
   nav <- toc[toc$level %in% 0:1, ]
