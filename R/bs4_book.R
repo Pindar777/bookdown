@@ -17,12 +17,14 @@
 #' @param lib_dir,pandoc_args,extra_dependencies,split_bib,... Passed on to
 #'   [rmarkdown::html_document()].
 #' @param fn_gitbook A boolean to switch to gitbook-variant of dealing with footnotes
-#' 
+#' @param TOC_collapsed A boolean to switch on a collapsed TOC, default is TRUE
+#'
 #' @export
 #' @md
 bs4_book <- function(theme = bs4_book_theme(),
                      repo = NULL,
                      fn_gitbook = FALSE,
+                     TOC_collapsed = TRUE,
                      ...,
                      lib_dir = "libs",
                      pandoc_args = NULL,
@@ -56,7 +58,7 @@ bs4_book <- function(theme = bs4_book_theme(),
     }
 
     output2 <- bs4_book_build(output, repo = repo, lib_dir = lib_dir,
-                              split_bib = split_bib, fn_gitbook = fn_gitbook)
+                              split_bib = split_bib, fn_gitbook = fn_gitbook, TOC_collapsed = TOC_collapsed)
 
     if (clean && file.exists(output) && !same_path(output, output2)) {
       file.remove(output)
@@ -85,6 +87,7 @@ bs4_book_theme <- function(primary = "#0068D9", version = 4, ...) {
 bs4_book_build <- function(output = "bookdown.html",
                            repo = NULL,
                            fn_gitbook = fn_gitbook,
+                           TOC_collapsed = TOC_collapsed,
                            lib_dir = "libs",
                            output_dir = opts$get("output_dir"),
                            split_bib = split_bib) {
@@ -117,6 +120,7 @@ bs4_book_build <- function(output = "bookdown.html",
     bs4_chapters_tweak(output,
       repo = repo,
       fn_gitbook = fn_gitbook,
+      TOC_collapsed = TOC_collapsed,
       rmd_index = unlist(as.list(rmd_index)),
       output_dir = output_dir
     )
@@ -225,6 +229,7 @@ bs4_chapters_tweak <- function(output,
                                rmd_index = NULL,
                                repo = NULL,
                                fn_gitbook = FALSE,
+                               TOC_collapsed = TRUE,
                                output_dir = opts$get("output_dir")) {
   toc <- build_toc(output)
   files <- toc[!duplicated(toc$file_name) & !is.na(toc$file_name), ]
@@ -234,13 +239,13 @@ bs4_chapters_tweak <- function(output,
   for (i in seq_len(nrow(files))) {
     path <- files$path[[i]]
     message("Tweaking ", path)
-    index[[i]] <- bs4_chapter_tweak(path, toc, rmd_index = rmd_index, repo = repo, fn_gitbook = fn_gitbook)
+    index[[i]] <- bs4_chapter_tweak(path, toc, rmd_index = rmd_index, repo = repo, fn_gitbook = fn_gitbook, TOC_collapsed = TOC_collapsed)
   }
   # tweak 404.html ---
   path_404 <- file.path(output_dir, "404.html")
   if (file.exists(path_404)) {
     message("Tweaking ", path_404)
-    bs4_chapter_tweak(path_404, toc, rmd_index = rmd_index, repo = repo, fn_gitbook = fn_gitbook)
+    bs4_chapter_tweak(path_404, toc, rmd_index = rmd_index, repo = repo, fn_gitbook = fn_gitbook, TOC_collapsed = TOC_collapsed)
 
   }
   index <- unlist(index, recursive = FALSE, use.names = FALSE)
@@ -252,7 +257,7 @@ bs4_chapters_tweak <- function(output,
   )
 }
 
-bs4_chapter_tweak <- function(path, toc, rmd_index = NULL, repo = NULL, fn_gitbook = FALSE) {
+bs4_chapter_tweak <- function(path, toc, rmd_index = NULL, repo = NULL, fn_gitbook = FALSE, TOC_collapsed = TRUE) {
   text <- xfun::file_string(path)
 
   # Convert ANSI escape to \u2029 since control characters are ignored in XML2
@@ -266,7 +271,7 @@ bs4_chapter_tweak <- function(path, toc, rmd_index = NULL, repo = NULL, fn_gitbo
   tweak_chunks(html)
   tweak_footnotes(html, fn_gitbook)
   tweak_part_screwup(html)
-  tweak_navbar(html, toc, basename(path), rmd_index = rmd_index, repo = repo)
+  tweak_navbar(html, toc, basename(path), rmd_index = rmd_index, repo = repo, TOC_collapsed = TOC_collapsed)
   tweak_metadata(html, path)
   if (basename(path) == "404.html") tweak_404(html)
   downlit::downlit_html_node(html)
@@ -506,7 +511,7 @@ tweak_tables <- function(html) {
   invisible()
 }
 
-tweak_navbar <- function(html, toc, active = "", rmd_index = NULL, repo = NULL) {
+tweak_navbar <- function(html, toc, active = "", rmd_index = NULL, repo = NULL, TOC_collapsed = TRUE) {
   if (!is.null(repo) && length(repo) == 1) {
     repo <- list(
       base = repo,
@@ -593,9 +598,12 @@ tweak_navbar <- function(html, toc, active = "", rmd_index = NULL, repo = NULL) 
     "</ul>\n"
   )
 
-  dropdown <- xml2::xml_find_first(html, ".//div[@id='book-toc']")
-  xml2::xml_replace(dropdown, xml2::read_xml(to_insert))
-
+  # edit: collapsed TOC
+  if (isTrue(TOC_collapsed) {
+    dropdown <- xml2::xml_find_first(html, ".//div[@id='book-toc']")
+    xml2::xml_replace(dropdown, xml2::read_xml(to_insert))
+  }
+      
   # Prev/next chapter -------------------------------------------------------
   # Need to ignore entries without files for cross-links
   nav2 <- nav[!is.na(nav$file_name), ]
