@@ -17,14 +17,12 @@
 #' @param lib_dir,pandoc_args,extra_dependencies,split_bib,... Passed on to
 #'   [rmarkdown::html_document()].
 #' @param fn_gitbook A boolean to switch to gitbook-variant of dealing with footnotes
-#' @param TOC_collapsed A boolean to switch on a collapsed TOC, default is TRUE
 #'
 #' @export
 #' @md
 bs4_book <- function(theme = bs4_book_theme(),
                      repo = NULL,
                      fn_gitbook = FALSE,
-                     TOC_collapsed = TRUE,
                      ...,
                      lib_dir = "libs",
                      pandoc_args = NULL,
@@ -58,7 +56,7 @@ bs4_book <- function(theme = bs4_book_theme(),
     }
 
     output2 <- bs4_book_build(output, repo = repo, lib_dir = lib_dir,
-                              split_bib = split_bib, fn_gitbook = fn_gitbook, TOC_collapsed = TOC_collapsed)
+                              split_bib = split_bib, fn_gitbook = fn_gitbook)
 
     if (clean && file.exists(output) && !same_path(output, output2)) {
       file.remove(output)
@@ -239,13 +237,13 @@ bs4_chapters_tweak <- function(output,
   for (i in seq_len(nrow(files))) {
     path <- files$path[[i]]
     message("Tweaking ", path)
-    index[[i]] <- bs4_chapter_tweak(path, toc, rmd_index = rmd_index, repo = repo, fn_gitbook = fn_gitbook, TOC_collapsed = TOC_collapsed)
+    index[[i]] <- bs4_chapter_tweak(path, toc, rmd_index = rmd_index, repo = repo, fn_gitbook = fn_gitbook)
   }
   # tweak 404.html ---
   path_404 <- file.path(output_dir, "404.html")
   if (file.exists(path_404)) {
     message("Tweaking ", path_404)
-    bs4_chapter_tweak(path_404, toc, rmd_index = rmd_index, repo = repo, fn_gitbook = fn_gitbook, TOC_collapsed = TOC_collapsed)
+    bs4_chapter_tweak(path_404, toc, rmd_index = rmd_index, repo = repo, fn_gitbook = fn_gitbook)
 
   }
   index <- unlist(index, recursive = FALSE, use.names = FALSE)
@@ -369,88 +367,7 @@ tweak_footnotes <- function(html, fn_gitbook = FALSE) {
   # Delete container
   xml2::xml_remove(container)
  } else {
-   return()
-#   # parse and remove footnotes (will reassign them to relevant pages later)
-#   res = parse_footnotes(html_body)
-#   fnts = res$items
-#   if (length(fnts)) html_body[res$range] = ''
-
-#   if (use_rmd_names) {
-#     html_body[idx] = ''
-#     nms_chaps = nms  # Rmd filenames
-#     if (n >= 1) {
-#       idx = next_nearest(idx, grep('^<div', html_body))
-#       idx = c(1, idx[-n])
-#     }
-#   } else {
-#     h1 = grep('^<div (id="[^"]+" )?class="section level1("| )', html_body)
-#     h2 = grep('^<div (id="[^"]+" )?class="section level2("| )', html_body)
-#     idx2 = if (split_level == 1) h1 else if (split_level == 2) sort(c(h1, h2))
-#     n = length(idx2)
-#     nms_chaps = if (length(idx)) {
-#       vapply(idx2, character(1), FUN = function(i) head(nms[idx > i], 1))
-#     }
-#     reg_id = '^<div id="([^"]+)".*$'
-#     reg_num = '^(<h[12]><span class="header-section-number">)([.A-Z0-9]+)(</span>.+</h[12]>).*$'
-#     nms = vapply(idx2, character(1), FUN = function(i) {
-#       x1 = html_body[i]; x2 = html_body[i + 1]
-#       id = if (grepl(reg_id, x1)) gsub(reg_id, '\\1', x1)
-#       num = if (grepl(reg_num, x2)) gsub(reg_num, '\\2', x2)
-#       if (is.null(id) && is.null(num)) stop(
-#         'The heading ', x2, ' must have at least an id or a number'
-#       )
-#       nm = if (grepl('[+]number$', split_by)) {
-#         paste(c(num, id), collapse = '-')
-#       } else id
-#       if (is.null(nm)) stop('The heading ', x2, ' must have an id')
-#       nm
-#     })
-#     if (anyDuplicated(nms)) (if (isTRUE(opts$get('preview'))) warning else stop)(
-#       'Automatically generated filenames contain duplicated ones: ',
-#       paste(nms[duplicated(nms)], collapse = ', ')
-#     )
-#     # generate index.html if the first Rmd filename is index.Rmd
-#     if (identical(with_ext(head(nms_chaps, 1), ''), 'index')) nms[1] = 'index'
-#     html_body[idx] = ''
-#     idx = idx2
-#   }
-#   if (n == 0) {
-#     idx = 1; nms = output; n = 1
-#   }
-
-#   nms = basename(with_ext(nms, '.html'))  # the HTML filenames to be generated
-#   input = opts$get('input_rmd')
-#   html_body = add_chapter_prefix(html_body)
-#   html_toc = restore_links(html_toc, html_body, idx, nms)
-#   for (i in seq_len(n)) {
-#     # skip writing the chapter.html if the current Rmd name is not in the vector
-#     # of Rmd names passed to render_book() (only this vector of Rmd's should be
-#     # rendered for preview purposes)
-#     if (isTRUE(opts$get('preview')) && !(nms_chaps[i] %in% input)) {
-#       if (!file.exists(output_path(nms[i]))) file.create(nms[i])
-#       next
-#     }
-#     i1 = idx[i]
-#     i2 = if (i == n) length(html_body) else idx[i + 1] - 1
-#     html = c(if (i == 1) html_title, html_body[i1:i2])
-#     a_targets = parse_a_targets(html)
-#     if (split_bib) {
-#       # in order to find references in footnotes, we add footnotes to chapter body
-#       a_targets = parse_a_targets(relocate_footnotes(html, fnts, a_targets))
-#       html = relocate_references(html, refs, ref_title, a_targets, refs_div)
-#     }
-#     html = relocate_footnotes(html, fnts, a_targets)
-#     html = restore_links(html, html_body, idx, nms)
-#     html = build(
-#       prepend_chapter_title(html_head, html), html_toc, html,
-#       if (i > 1) nms[i - 1],
-#       if (i < n) nms[i + 1],
-#       if (length(nms_chaps)) nms_chaps[i],
-#       nms[i], html_foot, ...
-#     )
-#     write_utf8(html, nms[i])
-#   }
-             
+   return()             
   }
 
 }
